@@ -10,9 +10,25 @@ target_include_directories(calimitos INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
+# Link caliper - handle both modern (namespaced) and spack targets
+# Spack's caliper may provide plain "caliper" target, not caliper::caliper
+if(TARGET caliper::caliper)
+    target_link_libraries(calimitos INTERFACE caliper::caliper)
+elseif(TARGET caliper)
+    target_link_libraries(calimitos INTERFACE caliper)
+else()
+    # Fallback to classic variables
+    if(caliper_INCLUDE_DIR)
+        target_include_directories(calimitos INTERFACE ${caliper_INCLUDE_DIR})
+    endif()
+    if(caliper_LIBRARIES)
+        target_link_libraries(calimitos INTERFACE ${caliper_LIBRARIES})
+    endif()
+    message(WARNING "Caliper targets not found; using classic variables.")
+endif()
+
 # Link required dependencies through the interface
 target_link_libraries(calimitos INTERFACE
-    caliper::caliper
     hwloc::hwloc
 )
 
@@ -31,3 +47,5 @@ target_compile_options(calimitos INTERFACE -fPIC)
 
 # Make the library available to the project
 set(calimitos_FOUND TRUE CACHE INTERNAL "calimitos found")
+
+install(PROGRAMS cali_to_csv.py DESTINATION .)
